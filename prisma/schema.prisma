@@ -1,5 +1,11 @@
-datasource db { provider = "postgresql"; url = env("postgresql://npcchatter_user:FS4P25YqDcizxIkddFBMPjWxyYoIb6rB@dpg-d2p48kfdiees73bhujq0-a.oregon-postgres.render.com/npcchatter") }
-generator client { provider = "prisma-client-js" }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
 
 model User {
   id          String       @id @default(cuid())
@@ -13,6 +19,7 @@ model User {
 model Campaign {
   id          String       @id @default(cuid())
   name        String
+  slug        String       @unique
   description String?
   avatar      String?
   createdAt   DateTime     @default(now())

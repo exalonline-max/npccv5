@@ -1,103 +1,177 @@
-import Image from "next/image";
+
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { SignIn, SignUp, SignedIn, SignedOut, UserProfile, useUser, useClerk } from "@clerk/nextjs";
+// Custom user-menu dropdown
+function CustomUserMenu() {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && menuRef.current.contains && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  if (!user) return null;
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        className="focus:outline-none"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <img
+          src={user.imageUrl}
+          alt="avatar"
+          className="w-10 h-10 rounded-full border border-gray-300 shadow"
+        />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border z-50">
+          <div className="flex flex-col items-center py-4">
+            <img src={user.imageUrl} alt="avatar" className="w-14 h-14 rounded-full mb-2" />
+            <div className="font-bold text-lg">{user.fullName || user.username}</div>
+            <div className="text-sm text-gray-500 mb-2">{user.primaryEmailAddress?.emailAddress || user.username}</div>
+          </div>
+          <div className="border-t">
+            <button
+              className="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => window.location.href = '/campaigns'}
+            >
+              <span role="img" aria-label="campaigns">🗂️</span> Campaigns
+            </button>
+            <button
+              className="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center gap-2"
+              onClick={() => window.location.href = '/user'}
+            >
+              <span role="img" aria-label="account">⚙️</span> Manage account
+            </button>
+            <button
+              className="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center gap-2 text-red-600"
+              onClick={() => signOut()}
+            >
+              <span role="img" aria-label="sign out">↩️</span> Sign out
+            </button>
+          </div>
+          <div className="text-xs text-gray-400 text-center py-2 border-t">Secured by Clerk<br /><span className="text-orange-500">Development mode</span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    fetch('/api/campaigns')
+      .then(res => res.json())
+      .then(setCampaigns);
+  }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const res = await fetch('/api/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, slug, description, avatar }),
+    });
+    const campaign = await res.json();
+    setLoading(false);
+    setCampaigns([...campaigns, campaign]);
+    setShowCreate(false);
+    setName("");
+    setSlug("");
+    setDescription("");
+    setAvatar("");
+  }
+
+  return (
+    <div className="min-h-screen w-full flex flex-col bg-[#e6eaf3] font-sans">
+      {/* Topbar for logged-in users */}
+      <SignedIn>
+        <div className="w-full flex items-center justify-between px-8 py-4 bg-white shadow z-20">
+          <div className="text-xl font-bold text-[#1976d2]">NPCChatter</div>
+          <CustomUserMenu />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="flex-1 flex flex-col items-center py-12">
+          <h1 className="text-3xl font-bold mb-6">Campaign Admin</h1>
+          <button
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold mb-8"
+            onClick={() => setShowCreate(true)}
+          >
+            Create New Campaign
+          </button>
+          {showCreate && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+                <button
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
+                  onClick={() => setShowCreate(false)}
+                >
+                  &times;
+                </button>
+                <h3 className="text-2xl font-extrabold mb-4 text-center text-gray-900">Create Campaign</h3>
+                <form onSubmit={handleCreate} className="flex flex-col gap-4">
+                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Campaign Name" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
+                  <input value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="Campaign Slug (URL)" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
+                  <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
+                  <input value={avatar} onChange={e => setAvatar(e.target.value)} placeholder="Avatar URL" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
+                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold" disabled={loading}>
+                    {loading ? "Creating..." : "Create Campaign"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+          <div className="w-full max-w-2xl">
+            <h2 className="text-xl font-semibold mb-4">Your Campaigns</h2>
+            {campaigns.length === 0 ? (
+              <div className="text-gray-500">No campaigns yet. Create one to get started!</div>
+            ) : (
+              <ul className="space-y-4">
+                {campaigns.map(c => (
+                  <li key={c.id} className="border p-4 rounded shadow flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {c.avatar && <img src={c.avatar} alt="avatar" className="w-12 h-12 rounded-full" />}
+                      <div>
+                        <h3 className="font-bold text-lg">{c.name}</h3>
+                        <p className="text-gray-600">{c.description}</p>
+                        <span className="text-xs text-gray-400">URL: /{c.slug}</span>
+                      </div>
+                    </div>
+                    <button
+                      className="bg-green-600 text-white px-4 py-2 rounded"
+                      onClick={() => window.location.href = `/${c.slug}`}
+                    >
+                      Go to Admin
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </SignedIn>
+      <SignedOut>
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <SignIn afterSignInUrl="/" afterSignUpUrl="/" />
+        </div>
+      </SignedOut>
     </div>
   );
 }
