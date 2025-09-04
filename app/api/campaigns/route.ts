@@ -20,11 +20,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    if (!data.name) {
-      return NextResponse.json({ error: 'Missing campaign name' }, { status: 400 });
+    if (!data.name || typeof data.name !== "string" || data.name.trim() === "") {
+      return NextResponse.json({ error: 'Missing or invalid campaign name' }, { status: 400 });
     }
-    if (!data.slug) {
-      return NextResponse.json({ error: 'Missing campaign slug' }, { status: 400 });
+    if (!data.slug || typeof data.slug !== "string" || !/^[a-z0-9-]+$/.test(data.slug)) {
+      return NextResponse.json({ error: 'Missing or invalid campaign slug (use only lowercase letters, numbers, and dashes)' }, { status: 400 });
+    }
+    // Check for duplicate slug
+    const existing = await prisma.campaign.findUnique({ where: { slug: data.slug } });
+    if (existing) {
+      return NextResponse.json({ error: 'Campaign slug already exists. Please choose another.' }, { status: 409 });
     }
     const campaign = await prisma.campaign.create({
       data: {
@@ -35,8 +40,12 @@ export async function POST(request: Request) {
       },
     });
     return NextResponse.json(campaign);
-  } catch (error) {
+  } catch (error: any) {
     console.error('POST /api/campaigns error:', error);
+    // Prisma unique constraint error
+    if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
+      return NextResponse.json({ error: 'Campaign slug already exists. Please choose another.' }, { status: 409 });
+    }
     return NextResponse.json({ error: 'Failed to create campaign', details: String(error) }, { status: 500 });
   }
 }

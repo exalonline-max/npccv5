@@ -97,6 +97,17 @@ export default function Home() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    setCampaignsError(null);
+    if (!slug || slug.trim() === "") {
+      setCampaignsError("Campaign slug is required.");
+      setLoading(false);
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      setCampaignsError("Slug must use only lowercase letters, numbers, and dashes.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     let avatarUrl = avatar;
     if (!avatarUrl) {
@@ -104,23 +115,29 @@ export default function Home() {
       const seed = Math.random().toString(36).substring(2, 12);
       avatarUrl = `https://api.dicebear.com/7.x/rings/svg?seed=${seed}`;
     }
-    const res = await fetch('/api/campaigns', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug, description, avatar: avatarUrl }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (data?.error) {
-      setCampaignsError(data.error);
-      return;
+    try {
+      const res = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, slug, description, avatar: avatarUrl }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        setCampaignsError(errorData.error || 'Unknown error creating campaign');
+        setLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setCampaigns([...campaigns, data]);
+      setShowCreate(false);
+      setName("");
+      setSlug("");
+      setDescription("");
+      setAvatar("");
+    } catch (err) {
+      setCampaignsError("Network error. Please try again.");
     }
-    setCampaigns([...campaigns, data]);
-    setShowCreate(false);
-    setName("");
-    setSlug("");
-    setDescription("");
-    setAvatar("");
+    setLoading(false);
   }
 
   return (
@@ -193,7 +210,7 @@ export default function Home() {
                     </div>
                     <button
                       className="bg-green-600 text-white px-4 py-2 rounded"
-                      onClick={() => window.location.href = `/${c.slug}`}
+                      onClick={() => window.location.href = `/${c.slug}/dm`}
                     >
                       Go to Admin
                     </button>

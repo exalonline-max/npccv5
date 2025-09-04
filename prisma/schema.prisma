@@ -14,6 +14,8 @@ model User {
   createdAt   DateTime     @default(now())
   memberships Membership[]
   characters  Character[]
+
+  @@map("users")
 }
 
 model Campaign {
@@ -25,25 +27,60 @@ model Campaign {
   createdAt   DateTime     @default(now())
   members     Membership[]
   characters  Character[]
+  invites     Invite[] // Add relation to Invite model
+
+  @@map("campaigns")
 }
 
 model Membership {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   userId     String
   campaignId String
-  role       String    // "DM" | "Player"
-  user       User      @relation(fields: [userId], references: [id])
-  campaign   Campaign  @relation(fields: [campaignId], references: [id])
+  role       String // "DM" | "Player"
+  user       User     @relation(fields: [userId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
   @@unique([userId, campaignId])
+  @@map("campaign_members")
 }
 
 model Character {
-  id         String    @id @default(cuid())
+  id         String @id @default(cuid())
   userId     String
   campaignId String
   name       String
   sheetJson  Json
 
-  user       User      @relation(fields: [userId], references: [id])
-  campaign   Campaign  @relation(fields: [campaignId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+
+  @@map("characters")
+}
+
+model Invite {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  campaignId String
+  createdAt  DateTime @default(now())
+  used       Boolean  @default(false)
+  usedBy     String?
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  @@map("invites")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String
+  text       String
+  sender     String
+  createdAt  DateTime @default(now())
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([campaignId])
+  @@index([userId])
+  @@map("messages")
 }
