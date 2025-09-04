@@ -9,7 +9,6 @@ if (process.env.NODE_ENV === 'production') {
     global.prisma = new PrismaClient();
   }
   prisma = global.prisma;
-  prisma = global.prisma;
 }
 
 export async function getCampaigns() {
