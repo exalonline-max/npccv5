@@ -2,7 +2,8 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { SignIn, SignUp, SignedIn, SignedOut, UserProfile, useUser, useClerk } from "@clerk/nextjs";
+import Link from "next/link";
+import { SignIn, SignedIn, SignedOut, useUser, useClerk } from "@clerk/nextjs";
 // Custom user-menu dropdown
 function CustomUserMenu() {
   const { user } = useUser();
@@ -71,6 +72,12 @@ function CustomUserMenu() {
 
 
 export default function Home() {
+  // Build-time/runtime guard: only render Clerk components when a publishable key
+  // is available. This prevents build-time prerender errors like
+  // "SignedIn can only be used within the <ClerkProvider />" when NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  // is not set in the environment used for the build.
+  const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
   const [campaigns, setCampaigns] = useState<Array<{id: string, name: string, avatar?: string, description?: string, slug?: string}>>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -145,92 +152,108 @@ export default function Home() {
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-[#e6eaf3] font-sans">
-      {/* Topbar for logged-in users */}
-      <SignedIn>
-        <div className="w-full flex items-center justify-between px-8 py-4 bg-white shadow z-20">
-          <div className="text-xl font-bold text-[#1976d2]">NPCChatter</div>
-          <CustomUserMenu />
-        </div>
-        <div className="flex-1 flex flex-col items-center py-12">
-          <h1 className="text-3xl font-bold mb-6">Campaign Admin</h1>
-          <button
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold mb-8"
-            onClick={() => setShowCreate(true)}
-          >
-            Create New Campaign
-          </button>
-          {showCreate && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
-                <button
-                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
-                  onClick={() => setShowCreate(false)}
-                >
-                  &times;
-                </button>
-                <h3 className="text-2xl font-extrabold mb-4 text-center text-gray-900">Create Campaign</h3>
-                <div className="flex gap-8 items-center">
-                  {/* Avatar preview on the left */}
-                  <div className="flex flex-col items-center justify-center">
-                    <Image
-                      src={`https://api.dicebear.com/7.x/rings/svg?seed=${slug || 'campaign'}`}
-                      alt="Campaign Avatar"
-                      width={128}
-                      height={128}
-                      className="w-32 h-32 rounded-full border shadow mb-2"
-                    />
-                    <div className="text-xs text-gray-400">Randomly generated avatar</div>
-                  </div>
-                  {/* Form fields on the right */}
-                  <form onSubmit={handleCreate} className="flex flex-col gap-4 flex-1">
-                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Campaign Name" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
-                    <input value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="Campaign Slug (URL)" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
-                    <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
-                    {/* Avatar URL input removed, avatar is now auto-generated */}
-                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold" disabled={loading}>
-                      {loading ? "Creating..." : "Create Campaign"}
+      {HAS_CLERK ? (
+        // If Clerk is configured, render the auth-aware UI using SignedIn/SignedOut.
+        <>
+          <SignedIn>
+            <div className="w-full flex items-center justify-between px-8 py-4 bg-white shadow z-20">
+              <div className="text-xl font-bold text-[#1976d2]">NPCChatter</div>
+              <CustomUserMenu />
+            </div>
+            <div className="flex-1 flex flex-col items-center py-12">
+              <h1 className="text-3xl font-bold mb-6">Campaign Admin</h1>
+              <button
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold mb-8"
+                onClick={() => setShowCreate(true)}
+              >
+                Create New Campaign
+              </button>
+              {showCreate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                  <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
+                    <button
+                      className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
+                      onClick={() => setShowCreate(false)}
+                    >
+                      &times;
                     </button>
-                  </form>
+                    <h3 className="text-2xl font-extrabold mb-4 text-center text-gray-900">Create Campaign</h3>
+                    <div className="flex gap-8 items-center">
+                      {/* Avatar preview on the left */}
+                      <div className="flex flex-col items-center justify-center">
+                        <Image
+                          src={`https://api.dicebear.com/7.x/rings/svg?seed=${slug || 'campaign'}`}
+                          alt="Campaign Avatar"
+                          width={128}
+                          height={128}
+                          className="w-32 h-32 rounded-full border shadow mb-2"
+                        />
+                        <div className="text-xs text-gray-400">Randomly generated avatar</div>
+                      </div>
+                      {/* Form fields on the right */}
+                      <form onSubmit={handleCreate} className="flex flex-col gap-4 flex-1">
+                        <input value={name} onChange={e => setName(e.target.value)} placeholder="Campaign Name" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
+                        <input value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="Campaign Slug (URL)" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
+                        <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
+                        {/* Avatar URL input removed, avatar is now auto-generated */}
+                        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold" disabled={loading}>
+                          {loading ? "Creating..." : "Create Campaign"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
                 </div>
+              )}
+              <div className="w-full max-w-2xl">
+                <h2 className="text-xl font-semibold mb-4">Your Campaigns</h2>
+                {campaignsError ? (
+                  <div className="text-red-500">Error: {campaignsError}</div>
+                ) : campaigns.length === 0 ? (
+                  <div className="text-gray-500">No campaigns yet. Create one to get started!</div>
+                ) : (
+                  <ul className="space-y-4">
+                    {Array.isArray(campaigns) && campaigns.map(c => (
+                      <li key={c.id} className="border p-4 rounded shadow flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          {c.avatar && <Image src={c.avatar} alt="avatar" width={48} height={48} className="w-12 h-12 rounded-full" />}
+                          <div>
+                            <h3 className="font-bold text-lg">{c.name}</h3>
+                            <p className="text-gray-600">{c.description}</p>
+                            <span className="text-xs text-gray-400">URL: /{c.slug}</span>
+                          </div>
+                        </div>
+                        <button
+                          className="bg-green-600 text-white px-4 py-2 rounded"
+                          onClick={() => window.location.href = `/${c.slug}/dm`}
+                        >
+                          Go to Admin
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
-          )}
-          <div className="w-full max-w-2xl">
-            <h2 className="text-xl font-semibold mb-4">Your Campaigns</h2>
-            {campaignsError ? (
-              <div className="text-red-500">Error: {campaignsError}</div>
-            ) : campaigns.length === 0 ? (
-              <div className="text-gray-500">No campaigns yet. Create one to get started!</div>
-            ) : (
-              <ul className="space-y-4">
-                {Array.isArray(campaigns) && campaigns.map(c => (
-                  <li key={c.id} className="border p-4 rounded shadow flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {c.avatar && <Image src={c.avatar} alt="avatar" width={48} height={48} className="w-12 h-12 rounded-full" />}
-                      <div>
-                        <h3 className="font-bold text-lg">{c.name}</h3>
-                        <p className="text-gray-600">{c.description}</p>
-                        <span className="text-xs text-gray-400">URL: /{c.slug}</span>
-                      </div>
-                    </div>
-                    <button
-                      className="bg-green-600 text-white px-4 py-2 rounded"
-                      onClick={() => window.location.href = `/${c.slug}/dm`}
-                    >
-                      Go to Admin
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+          </SignedIn>
+          <SignedOut>
+            <div className="flex flex-col items-center justify-center min-h-screen">
+              <SignIn afterSignInUrl="/" afterSignUpUrl="/" />
+            </div>
+          </SignedOut>
+        </>
+      ) : (
+        // Clerk not configured: render a safe fallback so prerender/build won't try to
+        // initialize Clerk or render <SignedIn>/<SignedOut> outside of a provider.
+        <div className="min-h-screen w-full flex items-center justify-center">
+          <div className="text-center p-8">
+            <h1 className="text-3xl font-bold mb-4">NPCChatter</h1>
+            <p className="text-gray-600">Authentication is not configured for this build. Set <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> to enable sign-in UI.</p>
+            <div className="mt-6">
+              <Link href="/campaigns" className="text-blue-600 underline">Browse campaigns (public)</Link>
+            </div>
           </div>
         </div>
-      </SignedIn>
-      <SignedOut>
-        <div className="flex flex-col items-center justify-center min-h-screen">
-          <SignIn afterSignInUrl="/" afterSignUpUrl="/" />
-        </div>
-      </SignedOut>
+      )}
     </div>
   );
 }
