@@ -26,6 +26,7 @@
     "keyv": "^5.5.0",
     "nanoid": "^5.1.5",
     "next": "15.5.2",
+    "pg": "^8.16.3",
     "ra-data-simple-rest": "^5.11.0",
     "react": "19.1.0",
     "react-admin": "^5.11.0",

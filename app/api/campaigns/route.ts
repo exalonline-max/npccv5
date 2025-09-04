@@ -1,8 +1,5 @@
-// Update the import path to match your actual Prisma client location
-// Update the import path to match your actual Prisma client location
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
 import { NextResponse } from 'next/server';
+import { prisma } from '../../../prisma/prisma';
 
 
 
@@ -43,7 +40,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('POST /api/campaigns error:', error);
     // Prisma unique constraint error
-  if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002' && (error as any).meta?.target?.includes('slug')) {
+    function isPrismaError(e: unknown): e is { code?: string; meta?: { target?: string[] } } {
+      return typeof e === 'object' && e !== null && 'code' in e;
+    }
+    if (isPrismaError(error) && error.code === 'P2002' && error.meta?.target?.includes('slug')) {
       return NextResponse.json({ error: 'Campaign slug already exists. Please choose another.' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Failed to create campaign', details: String(error) }, { status: 500 });

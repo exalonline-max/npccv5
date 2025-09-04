@@ -14,6 +14,7 @@ model User {
   createdAt   DateTime     @default(now())
   memberships Membership[]
   characters  Character[]
+  messages    Message[]
 
   @@map("users")
 }
@@ -28,6 +29,7 @@ model Campaign {
   members     Membership[]
   characters  Character[]
   invites     Invite[] // Add relation to Invite model
+  messages    Message[]
 
   @@map("campaigns")
 }

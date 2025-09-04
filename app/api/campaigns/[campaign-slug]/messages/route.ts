@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../prisma/prisma';
 import { currentUser } from '@clerk/nextjs/server';
 
-export async function GET(request: Request, context: { params: { 'campaign-slug': string } }) {
-  const params = await context.params;
+export async function GET(request: Request, context: unknown) {
+  const rawParams = (context as { params?: unknown })?.params;
+  const params = await (rawParams instanceof Promise ? rawParams : Promise.resolve(rawParams));
   const slug = params['campaign-slug'];
   if (!slug) return NextResponse.json({ error: 'Missing campaign slug' }, { status: 400 });
   const campaign = await prisma.campaign.findUnique({ where: { slug } });
@@ -16,8 +17,9 @@ export async function GET(request: Request, context: { params: { 'campaign-slug'
   return NextResponse.json({ messages });
 }
 
-export async function POST(request: Request, context: { params: { 'campaign-slug': string } }) {
-  const params = await context.params;
+export async function POST(request: Request, context: unknown) {
+  const rawParams = (context as { params?: unknown })?.params;
+  const params = await (rawParams instanceof Promise ? rawParams : Promise.resolve(rawParams));
   const slug = params['campaign-slug'];
   if (!slug) return NextResponse.json({ error: 'Missing campaign slug' }, { status: 400 });
   const campaign = await prisma.campaign.findUnique({ where: { slug } });

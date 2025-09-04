@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from 'next/image';
 import { prisma } from "../../prisma/prisma";
 
 type Member = {
@@ -30,7 +31,7 @@ export default async function CampaignDashboard({ params }: { params: { "campaig
         <p className="mb-4 text-center text-gray-600">{campaign.description}</p>
         {campaign.avatar && (
           <div className="flex justify-center mb-6">
-            <img src={campaign.avatar} alt="avatar" className="w-24 h-24 rounded-full" />
+              <Image src={campaign.avatar} alt="avatar" width={96} height={96} className="w-24 h-24 rounded-full" />
           </div>
         )}
         <h2 className="text-xl font-semibold mb-2">Members</h2>

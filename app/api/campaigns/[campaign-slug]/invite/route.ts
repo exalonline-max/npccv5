@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../prisma/prisma';
 import { nanoid } from 'nanoid';
 
-export async function POST(request: Request, { params }: { params: { 'campaign-slug': string } }) {
+export async function POST(request: Request, context: unknown) {
+  const rawParams = (context as { params?: unknown })?.params;
+  const params = await (rawParams instanceof Promise ? rawParams : Promise.resolve(rawParams));
   const slug = params['campaign-slug'];
   if (!slug) {
     return NextResponse.json({ error: 'Missing campaign slug' }, { status: 400 });
@@ -22,10 +24,12 @@ export async function POST(request: Request, { params }: { params: { 'campaign-s
     },
   });
   // Return invite link
-  return NextResponse.json({ inviteUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/invite/${token}` });
+  return NextResponse.json({ inviteUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/invite/${invite.token}` });
 }
 
-export async function GET(request: Request, { params }: { params: { 'campaign-slug': string } }) {
+export async function GET(request: Request, context: unknown) {
+  const rawParams = (context as { params?: unknown })?.params;
+  const params = await (rawParams instanceof Promise ? rawParams : Promise.resolve(rawParams));
   const slug = params['campaign-slug'];
   if (!slug) {
     return NextResponse.json({ error: 'Missing campaign slug' }, { status: 400 });

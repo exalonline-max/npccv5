@@ -59,6 +59,9 @@ importers:
       next:
         specifier: 15.5.2
         version: 15.5.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
       ra-data-simple-rest:
         specifier: ^5.11.0
         version: 5.11.0(ra-core@5.11.0(react-dom@19.1.0(react@19.1.0))(react-hook-form@7.62.0(react@19.1.0))(react-router-dom@7.8.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-router@7.8.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))

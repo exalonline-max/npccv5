@@ -1,10 +1,11 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Heading, Text, Button, Input, Flex, ChakraProvider, Link } from "@chakra-ui/react";
-import { Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar, Typography, AppBar, IconButton, Menu, MenuItem, Avatar } from "@mui/material";
-import { useClerk, useUser } from '@clerk/nextjs';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Box, Heading, Text, Button, Input, Flex, Link } from "@chakra-ui/react";
+import { Toolbar, Typography, AppBar, IconButton, Menu, MenuItem, Avatar } from "@mui/material";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 import * as Ably from "ably";
+
 function TopBar() {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -14,9 +15,7 @@ function TopBar() {
   const handleMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   }, []);
-  const handleClose = useCallback(() => {
-    setAnchorEl(null);
-  }, []);
+  const handleClose = useCallback(() => setAnchorEl(null), []);
   const handleSignOut = useCallback(() => {
     signOut();
     setAnchorEl(null);
@@ -33,14 +32,8 @@ function TopBar() {
             <IconButton onClick={handleMenu} color="inherit" size="large">
               <Avatar src={user.imageUrl} alt={user.fullName || user.username || "User"} />
             </IconButton>
-            <Menu
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleClose}
-              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-            >
-              <MenuItem disabled>{user.fullName || user.username || (user.emailAddresses && user.emailAddresses[0]?.emailAddress)}</MenuItem>
+            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+              <MenuItem disabled>{user.fullName || user.username}</MenuItem>
               <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
             </Menu>
           </>
@@ -48,215 +41,140 @@ function TopBar() {
       </Toolbar>
     </AppBar>
   );
-// ...existing code...
+}
 
-
-function WidgetPanel() {
+function OverviewWidget() {
   return (
-  <Box display="flex" flexWrap="wrap" gap={3} p={3}>
-  <OverviewWidget />
-  <MembersWidget />
-  <InviteWidget />
-  <ChatWidget />
+    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
+      <Heading size="md" mb={2}>Campaign Overview</Heading>
+      <Text color="#7c4a03">Basic campaign information appears here.</Text>
     </Box>
   );
 }
 
-const parchment = "bg-[#f8ecd7] border-4 border-[#c2a97f] shadow-[0_4px_24px_rgba(0,0,0,0.12)] rounded-xl font-[Cinzel,serif]";
-const fantasyTitle = "font-[Cinzel,serif] text-[#7c4a03] text-2xl mb-2 tracking-wide drop-shadow";
-
-const OverviewWidget = () => {
+function MembersWidget() {
   return (
-    <div className={`${parchment} p-5 min-w-[320px] max-w-[400px] flex-1`}>
-      <div className={fantasyTitle}>Campaign Overview</div>
-      <div className="text-[#7c4a03] font-bold">Name: <span className="font-normal">[Campaign Name]</span></div>
-      <div className="text-[#7c4a03] font-bold">Description: <span className="font-normal">[Campaign Description]</span></div>
-      <div className="mt-4 text-[#bfa76a] italic">[Avatar Placeholder]</div>
-    </div>
+    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
+      <Heading size="md" mb={2}>Members</Heading>
+      <Text color="#7c4a03">Member list placeholder</Text>
+    </Box>
   );
 }
 
-const MembersWidget = () => {
-  return (
-    <div className={`${parchment} p-5 min-w-[320px] max-w-[400px] flex-1`}>
-      <div className={fantasyTitle}>Members</div>
-      <div className="text-[#7c4a03]">List of members and roles will appear here.</div>
-    </div>
-  );
-}
+const ABLY_API_KEY = process.env.NEXT_PUBLIC_ABLY_KEY || "";
+type ChatMessage = { text: string; sender: string; createdAt?: string };
 
-// Placeholder Chat Widget for Ably
-// ...existing code...
-
-const InviteWidget = () => {
+function InviteWidget() {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const params = useParams();
-  const slug = typeof params === 'object' ? params["campaign-slug"] : undefined;
+  const slug = typeof params === 'object' ? params['campaign-slug'] : undefined;
 
   useEffect(() => {
-    async function fetchInvite() {
-      if (!slug) return;
+    if (!slug) return;
+    let mounted = true;
+    (async () => {
       setLoading(true);
       const res = await fetch(`/api/campaigns/${slug}/invite`);
       const data = await res.json();
-      setInviteUrl(data.inviteUrl);
+      if (mounted) setInviteUrl(data.inviteUrl ?? null);
       setLoading(false);
-    }
-    fetchInvite();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    })();
+    return () => { mounted = false; };
   }, [slug]);
 
   async function handleGenerate() {
     if (!slug) return;
     setLoading(true);
-    const res = await fetch(`/api/campaigns/${slug}/invite`, { method: "POST" });
+    const res = await fetch(`/api/campaigns/${slug}/invite`, { method: 'POST' });
     const data = await res.json();
-    setInviteUrl(data.inviteUrl);
+    setInviteUrl(data.inviteUrl ?? null);
     setLoading(false);
   }
 
   return (
-  <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" border="4px solid #c2a97f" boxShadow="0 4px 24px rgba(0,0,0,0.12)" borderRadius="xl" fontFamily="Cinzel,serif">
-      <Heading size="md" mb={2} color="#7c4a03" fontFamily="Cinzel,serif">Invite User</Heading>
-      <Text color="#7c4a03" mb={2}>Generate a unique invite link for this campaign. Share it with your players!</Text>
-        <Button
-          bg="#7c4a03"
-          color="#f8ecd7"
-          px={4}
-          py={2}
-          borderRadius="lg"
-          fontWeight="bold"
-          mb={4}
-          border="2px solid #c2a97f"
-          boxShadow="md"
-          _hover={{ bg: '#a67c52' }}
-          onClick={handleGenerate}
-          loading={loading}
-        >
-          {loading ? "Generating..." : "Generate Invite Link"}
-        </Button>
+    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
+      <Heading size="md" mb={2}>Invite User</Heading>
+      <Text mb={2}>Generate a unique invite link for this campaign.</Text>
+      <Button onClick={handleGenerate} disabled={loading} mb={3}>
+        {loading ? 'Generating...' : 'Generate Invite Link'}
+      </Button>
       {inviteUrl && (
         <Box mt={2}>
-          <Text color="#7c4a03" fontWeight="bold">Invite Link:</Text>
-          <Link href={inviteUrl} target="_blank" rel="noopener noreferrer" color="#a67c52" textDecoration="underline" wordBreak="break-all">{inviteUrl}</Link>
+          <Link href={inviteUrl} target="_blank" rel="noopener noreferrer" color="#7c4a03">{inviteUrl}</Link>
         </Box>
       )}
     </Box>
   );
-};
+}
 
-// Placeholder Chat Widget for Ably
-// ...existing code...
-// ...existing code...
-
-const ABLY_API_KEY = "cY1nHQ.kA73tw:mi5Kx3xI_7HVOhbIynKoSmvQUfKxzW-DlYvTI2FPcMo";
-
-const ChatWidget = () => {
-  const [messages, setMessages] = useState<{ text: string; sender: string; createdAt?: string }[]>([]);
-  const [input, setInput] = useState("");
-  const ablyRef = useRef<any>(null);
-  const channelRef = useRef<any>(null);
+function ChatWidget() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const ablyRef = useRef<Ably.Realtime | null>(null);
+  type MinimalChannel = { subscribe: (name: string, cb: (msg: { data: ChatMessage }) => void) => void; publish?: (name: string, data: unknown) => void; unsubscribe?: () => void };
+  const channelRef = useRef<MinimalChannel | null>(null);
   const params = useParams();
-  const slug = typeof params === 'object' ? params["campaign-slug"] : undefined;
+  const slug = typeof params === 'object' ? params['campaign-slug'] : undefined;
 
-  // Load messages from API on mount
   useEffect(() => {
-    if (!slug) return;
-    fetch(`/api/campaigns/${slug}/messages`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.messages) setMessages(data.messages);
-      });
-  }, [slug]);
-
-  // Ably real-time subscription
-  useEffect(() => {
+    if (!slug || !ABLY_API_KEY) return;
     ablyRef.current = new Ably.Realtime(ABLY_API_KEY);
-    channelRef.current = ablyRef.current.channels.get(`campaign-chat-${slug}`);
-    channelRef.current.subscribe("message", (msg: { data: { text: string; sender: string; createdAt?: string } }) => {
-      setMessages((prev: { text: string; sender: string; createdAt?: string }[]) => [...prev, msg.data]);
+    channelRef.current = ((ablyRef.current as unknown) as { channels: { get: (name: string) => MinimalChannel } }).channels.get(`campaign-chat-${slug}`);
+    channelRef.current.subscribe('message', (msg: { data: ChatMessage }) => {
+      setMessages(prev => [...prev, msg.data]);
     });
     return () => {
-      channelRef.current?.unsubscribe();
-      ablyRef.current?.close();
+      channelRef.current?.unsubscribe?.();
+      ablyRef.current?.close?.();
     };
   }, [slug]);
 
   const sendMessage = async () => {
     if (!input.trim() || !slug) return;
-    // Save to DB
     await fetch(`/api/campaigns/${slug}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: input, sender: "DM" }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: input, sender: 'DM' }),
     });
-    // Publish to Ably
-    channelRef.current?.publish("message", { text: input, sender: "DM" });
-    setInput("");
+  channelRef.current?.publish?.('message', { text: input, sender: 'DM' });
+    setInput('');
   };
 
   return (
-    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" border="4px solid #c2a97f" boxShadow="0 4px 24px rgba(0,0,0,0.12)" borderRadius="xl" fontFamily="Cinzel,serif">
-      <Heading size="md" mb={2} color="#7c4a03" fontFamily="Cinzel,serif">Tavern Chat</Heading>
-      <Box bg="#f3e3c3" border="2px solid #c2a97f" borderRadius="lg" mb={2} overflowY="auto" p={2} height="180px" boxShadow="inner">
+    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
+      <Heading size="md" mb={2}>Tavern Chat</Heading>
+      <Box mb={2} height="180px" overflowY="auto" bg="#f3e3c3" p={2} borderRadius="md">
         {messages.length === 0 ? (
-          <Text color="#bfa76a" textAlign="center" mt={6} fontStyle="italic">[No messages yet]</Text>
+          <Text color="#bfa76a">[No messages yet]</Text>
         ) : (
-          messages.map((msg: { text: string; sender: string; createdAt?: string }, idx: number) => (
-            <Box key={idx} mb={1} textAlign={msg.sender === "DM" ? "right" : "left"}>
-              <Text as="span" fontWeight="bold" color="#7c4a03">{msg.sender}: </Text>
-              <Text as="span" color="#4b2e0e">{msg.text}</Text>
-              {msg.createdAt && (
-                <Text as="span" fontSize="xs" color="#bfa76a" ml={2}>{new Date(msg.createdAt).toLocaleTimeString()}</Text>
-              )}
+          messages.map((m, i) => (
+            <Box key={i} mb={2}>
+              <Text fontWeight="bold">{m.sender}: <Text as="span" fontWeight="normal">{m.text}</Text></Text>
             </Box>
           ))
         )}
       </Box>
-      <Flex w="full" mt={2}>
-        <Input
-          type="text"
-          value={input}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
-          placeholder="Speak, traveler..."
-          border="2px solid #c2a97f"
-          p={2}
-          borderRadius="lg"
-          flex={1}
-          color="#4b2e0e"
-          bg="#f8ecd7"
-          fontFamily="Cinzel,serif"
-        />
-        <Button
-          bg="#7c4a03"
-          color="#f8ecd7"
-          px={3}
-          py={2}
-          borderRadius="lg"
-          fontWeight="bold"
-          ml={2}
-          border="2px solid #c2a97f"
-          boxShadow="md"
-          _hover={{ bg: '#a67c52' }}
-          onClick={sendMessage}
-        >
-          Send
-        </Button>
+      <Flex>
+        <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Speak, traveler..." />
+        <Button ml={2} onClick={sendMessage}>Send</Button>
       </Flex>
     </Box>
   );
-};
-// ...existing code...
+}
 
+export default function Page() {
   return (
-  <ChakraProvider>
-      <Box display="flex" flexDirection="column" minHeight="100vh" bg="gray.50">
-        <TopBar />
-        <Box as="main" flexGrow={1} p={3} mt="64px">
-          <WidgetPanel />
+    <Box display="flex" flexDirection="column" minHeight="100vh" bg="gray.50">
+      <TopBar />
+      <Box as="main" flexGrow={1} p={3} mt="64px">
+        <Box display="flex" gap={3} flexWrap="wrap">
+          <OverviewWidget />
+          <MembersWidget />
+          <InviteWidget />
+          <ChatWidget />
         </Box>
       </Box>
-    </ChakraProvider>
+    </Box>
   );
 }
