@@ -40,10 +40,10 @@ export async function POST(request: Request) {
       },
     });
     return NextResponse.json(campaign);
-  } catch (error: any) {
+  } catch (error) {
     console.error('POST /api/campaigns error:', error);
     // Prisma unique constraint error
-    if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
+  if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002' && (error as any).meta?.target?.includes('slug')) {
       return NextResponse.json({ error: 'Campaign slug already exists. Please choose another.' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Failed to create campaign', details: String(error) }, { status: 500 });

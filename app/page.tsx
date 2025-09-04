@@ -1,6 +1,7 @@
 
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { SignIn, SignUp, SignedIn, SignedOut, UserProfile, useUser, useClerk } from "@clerk/nextjs";
 // Custom user-menu dropdown
 function CustomUserMenu() {
@@ -26,16 +27,18 @@ function CustomUserMenu() {
         className="focus:outline-none"
         onClick={() => setOpen((v) => !v)}
       >
-        <img
+        <Image
           src={user.imageUrl}
           alt="avatar"
+          width={40}
+          height={40}
           className="w-10 h-10 rounded-full border border-gray-300 shadow"
         />
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border z-50">
           <div className="flex flex-col items-center py-4">
-            <img src={user.imageUrl} alt="avatar" className="w-14 h-14 rounded-full mb-2" />
+            <Image src={user.imageUrl} alt="avatar" width={56} height={56} className="w-14 h-14 rounded-full mb-2" />
             <div className="font-bold text-lg">{user.fullName || user.username}</div>
             <div className="text-sm text-gray-500 mb-2">{user.primaryEmailAddress?.emailAddress || user.username}</div>
           </div>
@@ -169,9 +172,11 @@ export default function Home() {
                 <div className="flex gap-8 items-center">
                   {/* Avatar preview on the left */}
                   <div className="flex flex-col items-center justify-center">
-                    <img
+                    <Image
                       src={`https://api.dicebear.com/7.x/rings/svg?seed=${slug || 'campaign'}`}
                       alt="Campaign Avatar"
+                      width={128}
+                      height={128}
                       className="w-32 h-32 rounded-full border shadow mb-2"
                     />
                     <div className="text-xs text-gray-400">Randomly generated avatar</div>
@@ -201,7 +206,7 @@ export default function Home() {
                 {Array.isArray(campaigns) && campaigns.map(c => (
                   <li key={c.id} className="border p-4 rounded shadow flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      {c.avatar && <img src={c.avatar} alt="avatar" className="w-12 h-12 rounded-full" />}
+                      {c.avatar && <Image src={c.avatar} alt="avatar" width={48} height={48} className="w-12 h-12 rounded-full" />}
                       <div>
                         <h3 className="font-bold text-lg">{c.name}</h3>
                         <p className="text-gray-600">{c.description}</p>

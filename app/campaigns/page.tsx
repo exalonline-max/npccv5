@@ -1,6 +1,7 @@
 "use client";
 // ...existing code...
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import CampaignMembers from './CampaignMembers';
 
 export default function CampaignsPage() {
@@ -44,7 +45,7 @@ export default function CampaignsPage() {
         {campaigns.map(c => (
           <li key={c.id} className="border p-4 rounded shadow">
             <div className="flex items-center gap-4">
-              {c.avatar && <img src={c.avatar} alt="avatar" className="w-12 h-12 rounded-full" />}
+              {c.avatar && <Image src={c.avatar} alt="avatar" width={48} height={48} className="w-12 h-12 rounded-full" />}
               <div>
                 <h2 className="font-bold text-lg">{c.name}</h2>
                 <p className="text-gray-600">{c.description}</p>
