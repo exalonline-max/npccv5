@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+
 import { prisma } from '../../../../../prisma/prisma';
 import { nanoid } from 'nanoid';
 

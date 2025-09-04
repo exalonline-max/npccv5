@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Box, Heading, Text, Button, Input, Flex, Link } from "@chakra-ui/react";
 import { Toolbar, Typography, AppBar, IconButton, Menu, MenuItem, Avatar } from "@mui/material";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
@@ -45,19 +44,19 @@ function TopBar() {
 
 function OverviewWidget() {
   return (
-    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
-      <Heading size="md" mb={2}>Campaign Overview</Heading>
-      <Text color="#7c4a03">Basic campaign information appears here.</Text>
-    </Box>
+    <div style={{ padding: 20, minWidth: 320, maxWidth: 400, flex: 1, background: '#f8ecd7', borderRadius: 12 }}>
+      <h3 style={{ marginBottom: 8 }}>Campaign Overview</h3>
+      <p style={{ color: '#7c4a03' }}>Basic campaign information appears here.</p>
+    </div>
   );
 }
 
 function MembersWidget() {
   return (
-    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
-      <Heading size="md" mb={2}>Members</Heading>
-      <Text color="#7c4a03">Member list placeholder</Text>
-    </Box>
+    <div style={{ padding: 20, minWidth: 320, maxWidth: 400, flex: 1, background: '#f8ecd7', borderRadius: 12 }}>
+      <h3 style={{ marginBottom: 8 }}>Members</h3>
+      <p style={{ color: '#7c4a03' }}>Member list placeholder</p>
+    </div>
   );
 }
 
@@ -68,7 +67,7 @@ function InviteWidget() {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const params = useParams();
-  const slug = typeof params === 'object' ? params['campaign-slug'] : undefined;
+  const slug = typeof params === 'object' ? (params['campaign-slug'] as string | undefined) : undefined;
 
   useEffect(() => {
     if (!slug) return;
@@ -93,18 +92,18 @@ function InviteWidget() {
   }
 
   return (
-    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
-      <Heading size="md" mb={2}>Invite User</Heading>
-      <Text mb={2}>Generate a unique invite link for this campaign.</Text>
-      <Button onClick={handleGenerate} disabled={loading} mb={3}>
+    <div style={{ padding: 20, minWidth: 320, maxWidth: 400, flex: 1, background: '#f8ecd7', borderRadius: 12 }}>
+      <h3 style={{ marginBottom: 8 }}>Invite User</h3>
+      <p style={{ marginBottom: 8 }}>Generate a unique invite link for this campaign.</p>
+      <button onClick={handleGenerate} disabled={loading} style={{ marginBottom: 12 }}>
         {loading ? 'Generating...' : 'Generate Invite Link'}
-      </Button>
+      </button>
       {inviteUrl && (
-        <Box mt={2}>
-          <Link href={inviteUrl} target="_blank" rel="noopener noreferrer" color="#7c4a03">{inviteUrl}</Link>
-        </Box>
+        <div style={{ marginTop: 8 }}>
+          <a href={inviteUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#7c4a03' }}>{inviteUrl}</a>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 
@@ -112,16 +111,19 @@ function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const ablyRef = useRef<Ably.Realtime | null>(null);
-  type MinimalChannel = { subscribe: (name: string, cb: (msg: { data: ChatMessage }) => void) => void; publish?: (name: string, data: unknown) => void; unsubscribe?: () => void };
+  type MinimalChannel = { subscribe: (event: string, cb: (msg: { data: ChatMessage }) => void) => void; publish?: (event: string, data: unknown) => void; unsubscribe?: () => void };
   const channelRef = useRef<MinimalChannel | null>(null);
   const params = useParams();
-  const slug = typeof params === 'object' ? params['campaign-slug'] : undefined;
+  const slug = typeof params === 'object' ? (params['campaign-slug'] as string | undefined) : undefined;
 
   useEffect(() => {
     if (!slug || !ABLY_API_KEY) return;
     ablyRef.current = new Ably.Realtime(ABLY_API_KEY);
-    channelRef.current = ((ablyRef.current as unknown) as { channels: { get: (name: string) => MinimalChannel } }).channels.get(`campaign-chat-${slug}`);
-    channelRef.current.subscribe('message', (msg: { data: ChatMessage }) => {
+  // typed cast to avoid 'any' while accessing Ably channels
+  const ablyTyped = ablyRef.current as unknown as { channels: { get: (name: string) => MinimalChannel } };
+  const channel = ablyTyped.channels.get(`campaign-chat-${slug}`);
+    channelRef.current = channel;
+    channel.subscribe('message', (msg: { data: ChatMessage }) => {
       setMessages(prev => [...prev, msg.data]);
     });
     return () => {
@@ -137,44 +139,44 @@ function ChatWidget() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: input, sender: 'DM' }),
     });
-  channelRef.current?.publish?.('message', { text: input, sender: 'DM' });
+    channelRef.current?.publish?.('message', { text: input, sender: 'DM' });
     setInput('');
   };
 
   return (
-    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" borderRadius="xl">
-      <Heading size="md" mb={2}>Tavern Chat</Heading>
-      <Box mb={2} height="180px" overflowY="auto" bg="#f3e3c3" p={2} borderRadius="md">
+    <div style={{ padding: 20, minWidth: 320, maxWidth: 400, flex: 1, background: '#f8ecd7', borderRadius: 12 }}>
+      <h3 style={{ marginBottom: 8 }}>Tavern Chat</h3>
+      <div style={{ marginBottom: 8, height: 180, overflowY: 'auto', background: '#f3e3c3', padding: 8, borderRadius: 6 }}>
         {messages.length === 0 ? (
-          <Text color="#bfa76a">[No messages yet]</Text>
+          <p style={{ color: '#bfa76a' }}>[No messages yet]</p>
         ) : (
           messages.map((m, i) => (
-            <Box key={i} mb={2}>
-              <Text fontWeight="bold">{m.sender}: <Text as="span" fontWeight="normal">{m.text}</Text></Text>
-            </Box>
+            <div key={i} style={{ marginBottom: 8 }}>
+              <strong>{m.sender}:</strong> <span>{m.text}</span>
+            </div>
           ))
         )}
-      </Box>
-      <Flex>
-        <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Speak, traveler..." />
-        <Button ml={2} onClick={sendMessage}>Send</Button>
-      </Flex>
-    </Box>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Speak, traveler..." />
+        <button onClick={sendMessage}>Send</button>
+      </div>
+    </div>
   );
 }
 
 export default function Page() {
   return (
-    <Box display="flex" flexDirection="column" minHeight="100vh" bg="gray.50">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'gray.50' }}>
       <TopBar />
-      <Box as="main" flexGrow={1} p={3} mt="64px">
-        <Box display="flex" gap={3} flexWrap="wrap">
+      <main style={{ flexGrow: 1, padding: 12, marginTop: 64 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <OverviewWidget />
           <MembersWidget />
           <InviteWidget />
           <ChatWidget />
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </main>
+    </div>
   );
 }
