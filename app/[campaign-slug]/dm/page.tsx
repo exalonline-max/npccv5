@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar, Typography, AppBar, IconButton, Menu, MenuItem, Avatar } from "@mui/material";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Box, Heading, Text, Button, Input, Flex, ChakraProvider, Link } from "@chakra-ui/react";
+import { Drawer, List, ListItem, ListItemButton, ListItemText, Toolbar, Typography, AppBar, IconButton, Menu, MenuItem, Avatar } from "@mui/material";
 import { useClerk, useUser } from '@clerk/nextjs';
-import { useCallback } from 'react';
+import { useParams } from "next/navigation";
+import * as Ably from "ably";
 function TopBar() {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -46,12 +48,12 @@ function TopBar() {
       </Toolbar>
     </AppBar>
   );
-}
+// ...existing code...
 
 
 function WidgetPanel() {
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, p: 3 }}>
+  <Box display="flex" flexWrap="wrap" gap={3} p={3}>
   <OverviewWidget />
   <MembersWidget />
   <InviteWidget />
@@ -83,11 +85,9 @@ const MembersWidget = () => {
   );
 }
 
-import { useRef, useEffect } from "react";
-import { useParams } from "next/navigation";
-
 // Placeholder Chat Widget for Ably
 // ...existing code...
+
 const InviteWidget = () => {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -117,29 +117,38 @@ const InviteWidget = () => {
   }
 
   return (
-    <div className={`${parchment} p-5 min-w-[320px] max-w-[400px] flex-1`}>
-      <div className={fantasyTitle}>Invite User</div>
-      <div className="text-[#7c4a03] mb-2">Generate a unique invite link for this campaign. Share it with your players!</div>
-      <button
-        className="bg-[#7c4a03] text-[#f8ecd7] px-4 py-2 rounded-lg font-bold mb-4 border-2 border-[#c2a97f] shadow hover:bg-[#a67c52] transition"
-        onClick={handleGenerate}
-        disabled={loading}
-      >
-        {loading ? "Generating..." : "Generate Invite Link"}
-      </button>
+  <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" border="4px solid #c2a97f" boxShadow="0 4px 24px rgba(0,0,0,0.12)" borderRadius="xl" fontFamily="Cinzel,serif">
+      <Heading size="md" mb={2} color="#7c4a03" fontFamily="Cinzel,serif">Invite User</Heading>
+      <Text color="#7c4a03" mb={2}>Generate a unique invite link for this campaign. Share it with your players!</Text>
+        <Button
+          bg="#7c4a03"
+          color="#f8ecd7"
+          px={4}
+          py={2}
+          borderRadius="lg"
+          fontWeight="bold"
+          mb={4}
+          border="2px solid #c2a97f"
+          boxShadow="md"
+          _hover={{ bg: '#a67c52' }}
+          onClick={handleGenerate}
+          loading={loading}
+        >
+          {loading ? "Generating..." : "Generate Invite Link"}
+        </Button>
       {inviteUrl && (
-        <div className="mt-2">
-          <div className="text-[#7c4a03] font-bold">Invite Link:</div>
-          <a href={inviteUrl} target="_blank" rel="noopener noreferrer" className="text-[#a67c52] underline break-all">{inviteUrl}</a>
-        </div>
+        <Box mt={2}>
+          <Text color="#7c4a03" fontWeight="bold">Invite Link:</Text>
+          <Link href={inviteUrl} target="_blank" rel="noopener noreferrer" color="#a67c52" textDecoration="underline" wordBreak="break-all">{inviteUrl}</Link>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 
 // Placeholder Chat Widget for Ably
 // ...existing code...
-import * as Ably from "ably";
+// ...existing code...
 
 const ABLY_API_KEY = "cY1nHQ.kA73tw:mi5Kx3xI_7HVOhbIynKoSmvQUfKxzW-DlYvTI2FPcMo";
 
@@ -165,8 +174,8 @@ const ChatWidget = () => {
   useEffect(() => {
     ablyRef.current = new Ably.Realtime(ABLY_API_KEY);
     channelRef.current = ablyRef.current.channels.get(`campaign-chat-${slug}`);
-    channelRef.current.subscribe("message", (msg: any) => {
-      setMessages((prev) => [...prev, msg.data]);
+    channelRef.current.subscribe("message", (msg: { data: { text: string; sender: string; createdAt?: string } }) => {
+      setMessages((prev: { text: string; sender: string; createdAt?: string }[]) => [...prev, msg.data]);
     });
     return () => {
       channelRef.current?.unsubscribe();
@@ -188,50 +197,66 @@ const ChatWidget = () => {
   };
 
   return (
-    <div className={`${parchment} p-5 min-w-[320px] max-w-[400px] flex-1`}>
-      <div className={fantasyTitle}>Tavern Chat</div>
-      <div className="bg-[#f3e3c3] border-2 border-[#c2a97f] rounded-lg mb-2 overflow-y-auto p-2 h-[180px] shadow-inner">
+    <Box p={5} minW="320px" maxW="400px" flex={1} bg="#f8ecd7" border="4px solid #c2a97f" boxShadow="0 4px 24px rgba(0,0,0,0.12)" borderRadius="xl" fontFamily="Cinzel,serif">
+      <Heading size="md" mb={2} color="#7c4a03" fontFamily="Cinzel,serif">Tavern Chat</Heading>
+      <Box bg="#f3e3c3" border="2px solid #c2a97f" borderRadius="lg" mb={2} overflowY="auto" p={2} height="180px" boxShadow="inner">
         {messages.length === 0 ? (
-          <div className="text-[#bfa76a] text-center mt-6 italic">[No messages yet]</div>
+          <Text color="#bfa76a" textAlign="center" mt={6} fontStyle="italic">[No messages yet]</Text>
         ) : (
-          messages.map((msg, idx) => (
-            <div key={idx} className={`mb-1 ${msg.sender === "DM" ? "text-right" : "text-left"}`}>
-              <span className="font-bold text-[#7c4a03]">{msg.sender}: </span>
-              <span className="text-[#4b2e0e]">{msg.text}</span>
+          messages.map((msg: { text: string; sender: string; createdAt?: string }, idx: number) => (
+            <Box key={idx} mb={1} textAlign={msg.sender === "DM" ? "right" : "left"}>
+              <Text as="span" fontWeight="bold" color="#7c4a03">{msg.sender}: </Text>
+              <Text as="span" color="#4b2e0e">{msg.text}</Text>
               {msg.createdAt && (
-                <span className="text-xs text-[#bfa76a] ml-2">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                <Text as="span" fontSize="xs" color="#bfa76a" ml={2}>{new Date(msg.createdAt).toLocaleTimeString()}</Text>
               )}
-            </div>
+            </Box>
           ))
         )}
-      </div>
-      <div className="flex w-full mt-2">
-        <input
+      </Box>
+      <Flex w="full" mt={2}>
+        <Input
           type="text"
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
           placeholder="Speak, traveler..."
-          className="border-2 border-[#c2a97f] p-2 rounded-lg flex-1 text-[#4b2e0e] bg-[#f8ecd7] font-[Cinzel,serif]"
+          border="2px solid #c2a97f"
+          p={2}
+          borderRadius="lg"
+          flex={1}
+          color="#4b2e0e"
+          bg="#f8ecd7"
+          fontFamily="Cinzel,serif"
         />
-        <button
-          className="bg-[#7c4a03] text-[#f8ecd7] px-3 py-2 rounded-lg font-bold ml-2 border-2 border-[#c2a97f] shadow hover:bg-[#a67c52] transition"
+        <Button
+          bg="#7c4a03"
+          color="#f8ecd7"
+          px={3}
+          py={2}
+          borderRadius="lg"
+          fontWeight="bold"
+          ml={2}
+          border="2px solid #c2a97f"
+          boxShadow="md"
+          _hover={{ bg: '#a67c52' }}
           onClick={sendMessage}
         >
           Send
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Flex>
+    </Box>
   );
 };
 // ...existing code...
 
-export default function CampaignAdmin() {
   return (
-    <Box sx={{ display: "flex", flexDirection: 'column', minHeight: '100vh', bgcolor: "background.default" }}>
-      <TopBar />
-      <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: '64px' }}>
-        <WidgetPanel />
+  <ChakraProvider>
+      <Box display="flex" flexDirection="column" minHeight="100vh" bg="gray.50">
+        <TopBar />
+        <Box as="main" flexGrow={1} p={3} mt="64px">
+          <WidgetPanel />
+        </Box>
       </Box>
-    </Box>
+    </ChakraProvider>
   );
 }
