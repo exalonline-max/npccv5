@@ -1,0 +1,42 @@
+datasource db { provider = "postgresql"; url = env("postgresql://npcchatter_user:FS4P25YqDcizxIkddFBMPjWxyYoIb6rB@dpg-d2p48kfdiees73bhujq0-a.oregon-postgres.render.com/npcchatter") }
+generator client { provider = "prisma-client-js" }
+
+model User {
+  id          String       @id @default(cuid())
+  clerkId     String       @unique
+  email       String       @unique
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+  characters  Character[]
+}
+
+model Campaign {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  createdAt   DateTime     @default(now())
+  members     Membership[]
+  characters  Character[]
+}
+
+model Membership {
+  id         String    @id @default(cuid())
+  userId     String
+  campaignId String
+  role       String    // "DM" | "Player"
+  user       User      @relation(fields: [userId], references: [id])
+  campaign   Campaign  @relation(fields: [campaignId], references: [id])
+  @@unique([userId, campaignId])
+}
+
+model Character {
+  id         String    @id @default(cuid())
+  userId     String
+  campaignId String
+  name       String
+  sheetJson  Json
+
+  user       User      @relation(fields: [userId], references: [id])
+  campaign   Campaign  @relation(fields: [campaignId], references: [id])
+}
