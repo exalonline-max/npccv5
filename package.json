@@ -16,6 +16,7 @@
     "@prisma/client": "^6.15.0",
     "ably": "^2.12.0",
     "daisyui": "^3.0.0",
+    "nanoid": "^5.1.5",
     "next": "15.5.2",
     "ra-data-simple-rest": "^5.11.0",
     "react": "19.1.0",
