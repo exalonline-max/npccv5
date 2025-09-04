@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import CampaignMembers from './CampaignMembers';
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<Array<{id: string, name: string, avatar?: string, description?: string, slug?: string}>>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [avatar, setAvatar] = useState('');

@@ -68,7 +68,7 @@ function CustomUserMenu() {
 
 
 export default function Home() {
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<Array<{id: string, name: string, avatar?: string, description?: string, slug?: string}>>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -76,23 +76,46 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
 
+  const [campaignsError, setCampaignsError] = useState<string | null>(null);
   useEffect(() => {
     fetch('/api/campaigns')
       .then(res => res.json())
-      .then(setCampaigns);
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCampaigns(data);
+          setCampaignsError(null);
+        } else {
+          setCampaigns([]);
+          setCampaignsError(data?.error || 'Unknown error fetching campaigns');
+        }
+      })
+      .catch(err => {
+        setCampaigns([]);
+        setCampaignsError(String(err));
+      });
   }, []);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    let avatarUrl = avatar;
+    if (!avatarUrl) {
+      // Generate a random seed for DiceBear
+      const seed = Math.random().toString(36).substring(2, 12);
+      avatarUrl = `https://api.dicebear.com/7.x/rings/svg?seed=${seed}`;
+    }
     const res = await fetch('/api/campaigns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug, description, avatar }),
+      body: JSON.stringify({ name, slug, description, avatar: avatarUrl }),
     });
-    const campaign = await res.json();
+    const data = await res.json();
     setLoading(false);
-    setCampaigns([...campaigns, campaign]);
+    if (data?.error) {
+      setCampaignsError(data.error);
+      return;
+    }
+    setCampaigns([...campaigns, data]);
     setShowCreate(false);
     setName("");
     setSlug("");
@@ -118,7 +141,7 @@ export default function Home() {
           </button>
           {showCreate && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full relative">
                 <button
                   className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
                   onClick={() => setShowCreate(false)}
@@ -126,25 +149,39 @@ export default function Home() {
                   &times;
                 </button>
                 <h3 className="text-2xl font-extrabold mb-4 text-center text-gray-900">Create Campaign</h3>
-                <form onSubmit={handleCreate} className="flex flex-col gap-4">
-                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Campaign Name" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
-                  <input value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="Campaign Slug (URL)" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
-                  <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
-                  <input value={avatar} onChange={e => setAvatar(e.target.value)} placeholder="Avatar URL" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
-                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold" disabled={loading}>
-                    {loading ? "Creating..." : "Create Campaign"}
-                  </button>
-                </form>
+                <div className="flex gap-8 items-center">
+                  {/* Avatar preview on the left */}
+                  <div className="flex flex-col items-center justify-center">
+                    <img
+                      src={`https://api.dicebear.com/7.x/rings/svg?seed=${slug || 'campaign'}`}
+                      alt="Campaign Avatar"
+                      className="w-32 h-32 rounded-full border shadow mb-2"
+                    />
+                    <div className="text-xs text-gray-400">Randomly generated avatar</div>
+                  </div>
+                  {/* Form fields on the right */}
+                  <form onSubmit={handleCreate} className="flex flex-col gap-4 flex-1">
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Campaign Name" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
+                    <input value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-').toLowerCase())} placeholder="Campaign Slug (URL)" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" required />
+                    <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" className="border p-2 rounded text-gray-900 placeholder-gray-500 bg-gray-50" />
+                    {/* Avatar URL input removed, avatar is now auto-generated */}
+                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold" disabled={loading}>
+                      {loading ? "Creating..." : "Create Campaign"}
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           )}
           <div className="w-full max-w-2xl">
             <h2 className="text-xl font-semibold mb-4">Your Campaigns</h2>
-            {campaigns.length === 0 ? (
+            {campaignsError ? (
+              <div className="text-red-500">Error: {campaignsError}</div>
+            ) : campaigns.length === 0 ? (
               <div className="text-gray-500">No campaigns yet. Create one to get started!</div>
             ) : (
               <ul className="space-y-4">
-                {campaigns.map(c => (
+                {Array.isArray(campaigns) && campaigns.map(c => (
                   <li key={c.id} className="border p-4 rounded shadow flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       {c.avatar && <img src={c.avatar} alt="avatar" className="w-12 h-12 rounded-full" />}

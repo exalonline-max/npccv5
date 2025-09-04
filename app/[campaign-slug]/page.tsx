@@ -1,11 +1,25 @@
 import { notFound } from "next/navigation";
 import { prisma } from "../../prisma/prisma";
 
+type Member = {
+  id: string;
+  role: string;
+  // add other member fields if needed
+};
+
+type Campaign = {
+  name: string;
+  description: string;
+  avatar?: string;
+  members: Member[];
+  // add other campaign fields if needed
+};
+
 export default async function CampaignDashboard({ params }: { params: { "campaign-slug": string } }) {
   const campaign = await prisma.campaign.findUnique({
     where: { slug: params["campaign-slug"] },
     include: { members: true },
-  });
+  }) as Campaign | null;
 
   if (!campaign) return notFound();
 

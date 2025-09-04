@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 
 export default function CampaignMembers({ campaignId }: { campaignId: string }) {
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<Array<{id: string, user?: {email?: string}, userId?: string, role?: string}>>([]);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('Player');
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,10 @@ export default function CampaignMembers({ campaignId }: { campaignId: string }) 
       body: JSON.stringify({ userId: email, campaignId, role }),
     });
     const newMember = await res.json();
-    setMembers([...members, { user: { email }, role }]);
+    setMembers([
+      ...members,
+      { id: newMember.id || `${email}-${role}-${Date.now()}`, user: { email }, role }
+    ]);
     setEmail('');
     setRole('Player');
     setLoading(false);
